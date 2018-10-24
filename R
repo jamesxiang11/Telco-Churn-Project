@@ -1,0 +1,76 @@
+
+load("train.Rdata")
+
+str(train)
+
+In total, the dataset has 21 variables, and 2000 observations, as well as one reponse variable, "churn", and 20 predictor variables. The response variable is a binary variable. Among 20 predictor variables, we have 4 continuous variables and 16 factor variables.  
+    
+
+sapply(train, function(x) sum(is.na(x)))
+index = which(is.na(train$TotalCharges))
+train = train[-index, ]
+
+
+numeric.var <- sapply(train, is.numeric)
+corr.matrix <- cor(train[,numeric.var])
+#install.packages("corrplot")
+library(corrplot)
+corrplot(corr.matrix, main="\nCorrelation Plot for Numerical Variables", method = "number", tl.pos = "d", tl.cex = 0.7)
+
+        
+library(polycor)
+hetcor(train$Churn,train$tenure)$correlations
+hetcor(train$Churn,train$MonthlyCharges)$correlations
+hetcor(train$Churn,train$TotalCharges)$correlations
+
+To identify if any factor variables are independent or not, we need to perform a Chi-Square test.
+Null hypothesis: they are independent
+Alternative hypothesis: they are correlated
+
+
+#create a new dataset containing factor variables only
+drops <- c("customerID","tenure","MonthlyCharges","TotalCharges")
+fac_data = train[ , !(names(train) %in% drops)]
+independent_var = c()
+dependent_var = c()
+
+for(i in 1:16)
+{
+  
+    p_value = with(fac_data, chisq.test(Churn,fac_data[,i]))$p.value
+    if(p_value>0.05){independent_var = append(independent_var,names(fac_data)[i])}
+    else {dependent_var = append(dependent_var,names(fac_data)[i])}
+  
+}
+
+independent_var 
+dependent_var   
+
+
+
+library(plyr)
+library(ggplot2)
+
+#plot for the correlation between factor variable and numerical variable 
+plot(train$Churn,train$tenure)
+plot(train$Churn,train$MonthlyCharges)
+plot(train$Churn,train$TotalCharges)
+
+with(fac_data, chisq.test(Churn,fac_data$gender))
+with(fac_data, chisq.test(Churn,fac_data$Dependents))
+
+
+
+df = count(train, c('gender', 'Churn'))
+ggplot(df, aes(gender, freq)) +   
+  geom_bar(aes(fill = Churn), position = "dodge", stat="identity")
+
+library(plyr)
+df = count(train, c('Partner', 'Churn'))
+ggplot(df, aes(Partner, freq)) +   
+  geom_bar(aes(fill = Churn), position = "dodge", stat="identity")
+
+
+df = count(train, c('InternetService', 'Churn'))
+ggplot(df, aes(InternetService, freq)) +   
+  geom_bar(aes(fill = Churn), position = "dodge", stat="identity")
